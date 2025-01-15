@@ -12,68 +12,47 @@ export class VirtualKeyboard {
         this.offsetY = 0;
         this.shiftActive = false;
         this.capsLockActive = false;
-        this.secretKey = '1234567890abcdef'; // คีย์ที่ใช้ในการเข้ารหัส
-        // ใช้ Web Crypto API สำหรับการจัดการคีย์
-        this.cryptoKey = null;
-        this.iv = window.crypto.getRandomValues(new Uint8Array(12)); // สร้าง IV สำหรับการเข้ารหัส/ถอดรหัส
-        this.generateKey();
 
-        this.render();
+        // กำหนดคีย์และ IV สำหรับการเข้ารหัส
+        this.secretKey = '1234567890abcdef1234567890abcdef'; // คีย์ความยาว 32 bytes
+        this.iv = CryptoJS.lib.WordArray.random(16); // สร้าง IV ความยาว 16 bytes
+
         this.initialize();
     }
 
-    async initialize() { 
-        await this.generateKey(); 
-        this.render(); 
-        this.initializeInputListeners(); 
-    }
-
-    async generateKey() {
-        this.cryptoKey = await window.crypto.subtle.generateKey(
-            { name: "AES-GCM", length: 256 },
-            true,
-            ["encrypt", "decrypt"]
-        );
-    }
-
-    async encodeText(text) {
-        const encodedData = new TextEncoder().encode(text);
-        const encryptedData = await window.crypto.subtle.encrypt(
-            { name: "AES-GCM", iv: this.iv },
-            this.cryptoKey,
-            encodedData
-        );
-        return this.arrayBufferToBase64(encryptedData); // แปลงเป็น Base64
-    }
-
-    async decodeText(base64Text) {
-        const encryptedData = this.base64ToArrayBuffer(base64Text);
-        const decryptedData = await window.crypto.subtle.decrypt(
-            { name: "AES-GCM", iv: this.iv },
-            this.cryptoKey,
-            encryptedData
-        );
-        return new TextDecoder().decode(decryptedData);
-    }
-
-    arrayBufferToBase64(buffer) {
-        let binary = '';
-        const bytes = new Uint8Array(buffer);
-        const len = bytes.byteLength;
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(bytes[i]);
+    async initialize() {
+        try {
+            this.render();
+            this.initializeInputListeners();
+            console.log("VirtualKeyboard initialized successfully.");
+        } catch (error) {
+            console.error("Error initializing VirtualKeyboard:", error);
         }
-        return window.btoa(binary);
     }
 
-    base64ToArrayBuffer(base64) {
-        const binaryString = window.atob(base64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes.buffer;
+    encodeText(text) {
+        const encrypted = CryptoJS.AES.encrypt(text, CryptoJS.enc.Hex.parse(this.secretKey), {
+            iv: this.iv,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7
+        });
+        return {
+            encrypted: encrypted.ciphertext.toString(CryptoJS.enc.Base64),
+            iv: this.iv.toString(CryptoJS.enc.Base64)
+        };
+    }
+
+    decodeText(encryptedData) {
+        const decrypted = CryptoJS.AES.decrypt(
+            { ciphertext: CryptoJS.enc.Base64.parse(encryptedData.encrypted) },
+            CryptoJS.enc.Hex.parse(this.secretKey),
+            {
+                iv: CryptoJS.enc.Base64.parse(encryptedData.iv),
+                mode: CryptoJS.mode.CBC,
+                padding: CryptoJS.pad.Pkcs7
+            }
+        );
+        return decrypted.toString(CryptoJS.enc.Utf8);
     }
 
     getLayoutName(layout) {
@@ -84,6 +63,7 @@ export class VirtualKeyboard {
             case 'thSc': return 'Thai scrambled';
             case 'numpad': return 'Numpad Keyboard';
             case 'scNum': return 'Scrambled Keyboard';
+            default: return 'Unknown Layout';
         }
     }
 
@@ -102,10 +82,10 @@ export class VirtualKeyboard {
             }
         }, true);
 
-        document.addEventListener('click', (e) => {
-            const target = document.getElementById("toggle");
-            target.addEventListener('click', this.toggle.bind(this), { once: true });
-        });
+        const toggle = document.getElementById("toggle");
+        if (toggle) {
+            toggle.addEventListener('click', this.toggle.bind(this));
+        }
     }
 
     setCurrentInput(inputElement) {
