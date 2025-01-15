@@ -19,7 +19,13 @@ export class VirtualKeyboard {
         this.generateKey();
 
         this.render();
-        this.initializeInputListeners();
+        this.initialize();
+    }
+
+    async initialize() { 
+        await this.generateKey(); 
+        this.render(); 
+        this.initializeInputListeners(); 
     }
 
     async generateKey() {
