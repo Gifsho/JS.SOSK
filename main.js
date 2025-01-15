@@ -1,5 +1,10 @@
 import { VirtualKeyboard } from './VirtualKeyboard.js';
 
 window.onload = () => {
-    window.keyboard = new VirtualKeyboard();
+    try {
+        window.keyboard = new VirtualKeyboard();
+        console.log("VirtualKeyboard initialized successfully.");
+    } catch (error) {
+        console.error("Error initializing VirtualKeyboard:", error);
+    }
 };
