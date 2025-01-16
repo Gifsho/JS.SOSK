@@ -262,87 +262,137 @@ export class VirtualKeyboard {
         this.currentInput.value = this.currentInput.value.slice(0, start) + decodedText + this.currentInput.value.slice(end);
         this.currentInput.selectionStart = this.currentInput.selectionEnd = start + decodedText.length;
     }
-    
+
     toggleCapsLock() {
         this.capsLockActive = !this.capsLockActive;
-        const capsKey = document.querySelector('.key[data-key="Caps"]');
-        capsKey.classList.toggle("active", this.capsLockActive);
-        capsKey.classList.toggle("bg-gray-400", this.capsLockActive);
+        document.querySelectorAll('.key[data-key="Caps"]').forEach((key) => {
+          key.classList.toggle("active", this.capsLockActive);
+          key.classList.toggle("bg-gray-400", this.capsLockActive);
+        });
     
         document.querySelectorAll(".key").forEach((key) => {
-            if (key.dataset.key.length === 1 && /[a-zA-Zก-๙]/.test(key.dataset.key)) {
-                key.textContent = this.capsLockActive
-                    ? key.dataset.key.toUpperCase()
-                    : key.dataset.key.toLowerCase();
-            }
+          if (key.dataset.key.length === 1 && /[a-zA-Zก-๙]/.test(key.dataset.key)) {
+            key.textContent = this.capsLockActive
+              ? key.dataset.key.toUpperCase()
+              : key.dataset.key.toLowerCase();
+          }
         });
     
-        const keyboardKeys = document.querySelectorAll(".key:not([data-key='Shift'])");
+        const keyboardKeys = document.querySelectorAll(
+          ".key:not([data-key='Shift'])"
+        );
         keyboardKeys.forEach((key) => {
-            const currentChar = key.textContent.trim();
-            if (
-                this.capsLockActive &&
-                this.currentLayout === "th" &&
-                this.ThaiAlphabetShift[currentChar]
-            ) {
-                key.textContent = this.ThaiAlphabetShift[currentChar];
-                key.dataset.key = this.ThaiAlphabetShift[currentChar];
-            } else if (
-                !this.capsLockActive &&
-                this.currentLayout === "th" &&
-                Object.values(this.ThaiAlphabetShift).includes(currentChar)
-            ) {
-                const originalKey = Object.keys(this.ThaiAlphabetShift).find(
-                    (key) => this.ThaiAlphabetShift[key] === currentChar
-                );
-                if (originalKey) {
-                    key.textContent = originalKey;
-                    key.dataset.key = originalKey;
-                }
+          const currentChar = key.textContent.trim();
+          if (
+            this.capsLockActive &&
+            this.currentLayout === "th" &&
+            this.ThaiAlphabetShift[currentChar]
+          ) {
+            key.textContent = this.ThaiAlphabetShift[currentChar];
+            key.dataset.key = this.ThaiAlphabetShift[currentChar];
+          } else if (
+            !this.capsLockActive &&
+            this.currentLayout === "th" &&
+            Object.values(this.ThaiAlphabetShift).includes(currentChar)
+          ) {
+            // เปลี่ยนกลับเมื่อปิด Shift
+            const originalKey = Object.keys(ThaiAlphabetShift).find(
+              (key) => this.ThaiAlphabetShift[key] === currentChar
+            );
+            if (originalKey) {
+              key.textContent = originalKey;
+              key.dataset.key = originalKey;
             }
+          }
+    
+          // Shift state for English layout
+          if (this.capsLockActive && this.currentLayout === "en") {
+            if (EngAlphabetShift[key.dataset.key]) {
+              key.textContent = this.EngAlphabetShift[key.dataset.key];
+              key.dataset.key = this.EngAlphabetShift[key.dataset.key];
+            }
+          } else if (!this.capsLockActive && this.currentLayout === "en") {
+            // Revert when shift is off
+            if (Object.values(EngAlphabetShift).includes(currentChar)) {
+              const originalKey = Object.keys(EngAlphabetShift).find(
+                (key) => EngAlphabetShift[key] === currentChar
+              );
+              if (originalKey) {
+                key.textContent = originalKey;
+                key.dataset.key = originalKey;
+              }
+            }
+          }
         });
     }
-    
+
     toggleShift() {
         this.shiftActive = !this.shiftActive;
-        const shiftKey = document.querySelector('.key[data-key="Shift"]');
-        shiftKey.classList.toggle("active", this.shiftActive);
-        shiftKey.classList.toggle("bg-gray-400", this.shiftActive);
+        document.querySelectorAll('.key[data-key="Shift"]').forEach((key) => {
+          key.classList.toggle("active", this.shiftActive);
+          key.classList.toggle("bg-gray-400", this.shiftActive);
+        });
     
         document.querySelectorAll(".key").forEach((key) => {
-            if (key.dataset.key.length === 1 && /[a-zA-Zก-๙]/.test(key.dataset.key)) {
-                // แสดงผลตัวพิมพ์ใหญ่หรือเล็กตามค่า Shift
-                key.textContent = this.shiftActive
-                    ? key.dataset.key.toUpperCase()
-                    : key.dataset.key.toLowerCase();
-            }
+          if (key.dataset.key.length === 1 && /[a-zA-Zก-๙]/.test(key.dataset.key)) {
+            key.textContent = this.shiftActive
+              ? key.dataset.key.toUpperCase()
+              : key.dataset.key.toLowerCase();
+          }
         });
     
-        const keyboardKeys = document.querySelectorAll(".key:not([data-key='Shift'])");
+        const keyboardKeys = document.querySelectorAll(
+          ".key:not([data-key='Shift'])"
+        );
         keyboardKeys.forEach((key) => {
-            const currentChar = key.textContent.trim();
-            if (
-                this.shiftActive &&
-                this.currentLayout === "th" && // ตรวจสอบว่ากำลังใช้เลย์เอาต์ภาษาไทย
-                this.ThaiAlphabetShift[currentChar]
-            ) {
-                key.textContent = this.ThaiAlphabetShift[currentChar]; // แสดงอักษรจาก shift
-                key.dataset.key = this.ThaiAlphabetShift[currentChar]; // อัปเดต dataset.key
-            } else if (
-                !this.shiftActive &&
-                this.currentLayout === "th" &&
-                Object.values(this.ThaiAlphabetShift).includes(currentChar)
-            ) {
-                const originalKey = Object.keys(this.ThaiAlphabetShift).find(
-                    (key) => this.ThaiAlphabetShift[key] === currentChar
-                );
-                if (originalKey) {
-                    key.textContent = originalKey;
-                    key.dataset.key = originalKey;
-                }
+          const currentChar = key.textContent.trim();
+          if (
+            this.shiftActive &&
+            this.currentLayout === "th" &&
+            this.ThaiAlphabetShift[currentChar]
+          ) {
+            key.textContent = this.ThaiAlphabetShift[currentChar];
+            key.dataset.key = this.ThaiAlphabetShift[currentChar];
+          } else if (
+            !this.shiftActive &&
+            this.currentLayout === "th" &&
+            Object.values(this.ThaiAlphabetShift).includes(currentChar)
+          ) {
+            // เปลี่ยนกลับเมื่อปิด Shift
+            const originalKey = Object.keys(ThaiAlphabetShift).find(
+              (key) => this.ThaiAlphabetShift[key] === currentChar
+            );
+            if (originalKey) {
+              key.textContent = originalKey;
+              key.dataset.key = originalKey;
             }
+          }
+    
+          // Shift state for English layout
+          if (this.shiftActive && this.currentLayout === "en") {
+            if (EngAlphabetShift[key.dataset.key]) {
+              key.textContent = this.EngAlphabetShift[key.dataset.key];
+              key.dataset.key = this.EngAlphabetShift[key.dataset.key];
+            }
+          } else if (!this.shiftActive && this.currentLayout === "en") {
+            // Revert when shift is off
+            if (Object.values(EngAlphabetShift).includes(currentChar)) {
+              const originalKey = Object.keys(EngAlphabetShift).find(
+                (key) => EngAlphabetShift[key] === currentChar
+              );
+              if (originalKey) {
+                key.textContent = originalKey;
+                key.dataset.key = originalKey;
+              }
+            }
+          }
         });
     }
+
+    EngAlphabetShift = {
+        "`": "~", 1: "!", 2: "@", 3: "#", 4: "$", 5: "%", 6: "^", 7: "&", 8: "*", 9: "(", 0: ")", "-": "_", "=": "+",
+        "[": "{", "]": "}", "\\": "|", ";": ":", "'": '"', ",": "<", ".": ">", "/": "?"
+    };
 
     ThaiAlphabetShift = {
         _: "%",
