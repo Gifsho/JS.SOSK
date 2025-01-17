@@ -144,9 +144,11 @@ export class VirtualKeyboard {
                     keyElement.className += ' space';
                 }
 
-                if (key === 'backspace') {
-                    keyElement.className += ' backspacew';
-                }
+                if (key === 'backspace' || key === 'Backspace') {
+                  keyElement.className += ' backspacew';
+                  keyElement.innerHTML = '<i class="fa fa-backspace"></i>'; 
+              }
+              
 
                 keyElement.onclick = (e) => {
                     e.preventDefault();
@@ -264,67 +266,70 @@ export class VirtualKeyboard {
     }
 
     toggleCapsLock() {
-        this.capsLockActive = !this.capsLockActive;
-        document.querySelectorAll('.key[data-key="Caps"]').forEach((key) => {
-          key.classList.toggle("active", this.capsLockActive);
-          key.classList.toggle("bg-gray-400", this.capsLockActive);
-        });
-    
-        document.querySelectorAll(".key").forEach((key) => {
-          if (key.dataset.key.length === 1 && /[a-zA-Zก-๙]/.test(key.dataset.key)) {
-            key.textContent = this.capsLockActive
-              ? key.dataset.key.toUpperCase()
-              : key.dataset.key.toLowerCase();
+      this.capsLockActive = !this.capsLockActive;
+      document.querySelectorAll('.key[data-key="Caps"]').forEach((key) => {
+        key.classList.toggle("active", this.capsLockActive);
+        key.classList.toggle("bg-gray-400", this.capsLockActive);
+      });
+  
+      document.querySelectorAll(".key").forEach((key) => {
+        if (key.dataset.key.length === 1 && /[a-zA-Zก-๙]/.test(key.dataset.key)) {
+          key.textContent = this.capsLockActive
+            ? key.dataset.key.toUpperCase()
+            : key.dataset.key.toLowerCase();
+        }
+      });
+  
+      const keyboardKeys = document.querySelectorAll(
+        ".key:not([data-key='Caps'])"
+      );
+      keyboardKeys.forEach((key) => {
+        const currentChar = key.textContent.trim();
+        if (
+          this.capsLockActive &&
+          this.currentLayout === "th" &&
+          this.ThaiAlphabetShift[currentChar]
+        ) {
+          key.textContent = this.ThaiAlphabetShift[currentChar];
+          key.dataset.key = this.ThaiAlphabetShift[currentChar];
+        } else if (
+          !this.capsLockActive &&
+          this.currentLayout === "th" &&
+          Object.values(this.ThaiAlphabetShift).includes(currentChar)
+        ) {
+          // เปลี่ยนกลับเมื่อปิด Shift
+          const originalKey = Object.keys(this.ThaiAlphabetShift).find(
+            (key) => this.ThaiAlphabetShift[key] === currentChar
+          );
+          if (originalKey) {
+            key.textContent = originalKey;
+            key.dataset.key = originalKey;
           }
-        });
-    
-        const keyboardKeys = document.querySelectorAll(
-          ".key:not([data-key='Shift'])"
-        );
-        keyboardKeys.forEach((key) => {
-          const currentChar = key.textContent.trim();
-          if (
-            this.capsLockActive &&
-            this.currentLayout === "th" &&
-            this.ThaiAlphabetShift[currentChar]
-          ) {
-            key.textContent = this.ThaiAlphabetShift[currentChar];
-            key.dataset.key = this.ThaiAlphabetShift[currentChar];
-          } else if (
-            !this.capsLockActive &&
-            this.currentLayout === "th" &&
-            Object.values(this.ThaiAlphabetShift).includes(currentChar)
-          ) {
-            // เปลี่ยนกลับเมื่อปิด Shift
-            const originalKey = Object.keys(ThaiAlphabetShift).find(
-              (key) => this.ThaiAlphabetShift[key] === currentChar
-            );
-            if (originalKey) {
-              key.textContent = originalKey;
-              key.dataset.key = originalKey;
-            }
+        }
+
+        if (
+          this.capsLockActive &&
+          this.currentLayout === "en" &&
+          this.EngAlphabetShift[currentChar]
+        ) {
+          key.textContent = this.EngAlphabetShift[currentChar];
+          key.dataset.key = this.EngAlphabetShift[currentChar];
+        } else if (
+          !this.capsLockActive &&
+          this.currentLayout === "en" &&
+          Object.values(this.EngAlphabetShift).includes(currentChar)
+        ) {
+          // เปลี่ยนกลับเมื่อปิด Shift
+          const originalKey = Object.keys(this.EngAlphabetShift).find(
+            (key) => this.EngAlphabetShift[key] === currentChar
+          );
+          if (originalKey) {
+            key.textContent = originalKey;
+            key.dataset.key = originalKey;
           }
-    
-          // Shift state for English layout
-          if (this.capsLockActive && this.currentLayout === "en") {
-            if (EngAlphabetShift[key.dataset.key]) {
-              key.textContent = this.EngAlphabetShift[key.dataset.key];
-              key.dataset.key = this.EngAlphabetShift[key.dataset.key];
-            }
-          } else if (!this.capsLockActive && this.currentLayout === "en") {
-            // Revert when shift is off
-            if (Object.values(EngAlphabetShift).includes(currentChar)) {
-              const originalKey = Object.keys(EngAlphabetShift).find(
-                (key) => EngAlphabetShift[key] === currentChar
-              );
-              if (originalKey) {
-                key.textContent = originalKey;
-                key.dataset.key = originalKey;
-              }
-            }
-          }
-        });
-    }
+        }
+      });
+  }
 
     toggleShift() {
         this.shiftActive = !this.shiftActive;
@@ -359,7 +364,7 @@ export class VirtualKeyboard {
             Object.values(this.ThaiAlphabetShift).includes(currentChar)
           ) {
             // เปลี่ยนกลับเมื่อปิด Shift
-            const originalKey = Object.keys(ThaiAlphabetShift).find(
+            const originalKey = Object.keys(this.ThaiAlphabetShift).find(
               (key) => this.ThaiAlphabetShift[key] === currentChar
             );
             if (originalKey) {
@@ -367,23 +372,26 @@ export class VirtualKeyboard {
               key.dataset.key = originalKey;
             }
           }
-    
-          // Shift state for English layout
-          if (this.shiftActive && this.currentLayout === "en") {
-            if (EngAlphabetShift[key.dataset.key]) {
-              key.textContent = this.EngAlphabetShift[key.dataset.key];
-              key.dataset.key = this.EngAlphabetShift[key.dataset.key];
-            }
-          } else if (!this.shiftActive && this.currentLayout === "en") {
-            // Revert when shift is off
-            if (Object.values(EngAlphabetShift).includes(currentChar)) {
-              const originalKey = Object.keys(EngAlphabetShift).find(
-                (key) => EngAlphabetShift[key] === currentChar
-              );
-              if (originalKey) {
-                key.textContent = originalKey;
-                key.dataset.key = originalKey;
-              }
+
+          if (
+            this.shiftActive &&
+            this.currentLayout === "en" &&
+            this.EngAlphabetShift[currentChar]
+          ) {
+            key.textContent = this.EngAlphabetShift[currentChar];
+            key.dataset.key = this.EngAlphabetShift[currentChar];
+          } else if (
+            !this.shiftActive &&
+            this.currentLayout === "en" &&
+            Object.values(this.EngAlphabetShift).includes(currentChar)
+          ) {
+            // เปลี่ยนกลับเมื่อปิด Shift
+            const originalKey = Object.keys(this.EngAlphabetShift).find(
+              (key) => this.EngAlphabetShift[key] === currentChar
+            );
+            if (originalKey) {
+              key.textContent = originalKey;
+              key.dataset.key = originalKey;
             }
           }
         });
