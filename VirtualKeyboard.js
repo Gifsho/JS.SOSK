@@ -256,9 +256,24 @@ export class VirtualKeyboard {
         await this.insertText("\t");
         break;
 
-      case "Enter":
+      case 'Enter':
         if (this.currentInput.tagName === "TEXTAREA") {
-          await this.insertText("\n");
+          const start = this.currentInput.selectionStart;
+          const end = this.currentInput.selectionEnd;
+          const value = this.currentInput.value;
+          this.currentInput.value = value.slice(0, start) + "\n" + value.slice(end);
+          this.currentInput.setSelectionRange(start + 1, start + 1);
+        } else if (this.currentInput.tagName === "INPUT" || this.currentInput.type === "password" || this.currentInput.type === "text") {
+          if (this.currentInput.form) {
+            const submitButton = this.currentInput.form.querySelector('input[type="submit"], button[type="submit"], button[type="button"], button[onclick]');
+            if (submitButton) {
+              submitButton.click();
+            } else {
+              this.currentInput.form.submit(); 
+            }
+          } else {
+            this.currentInput.value += '\n'; 
+          }
         }
         break;
 
