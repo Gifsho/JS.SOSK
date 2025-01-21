@@ -2,7 +2,7 @@ import { layouts } from "./layouts.js";
 
 export class VirtualKeyboard {
   constructor() {
-    this.currentLayout = "en";
+    this.currentLayout = "full";
     this.isVisible = false;
     this.container = document.getElementById("keyboard-container");
     this.currentInput = null;
@@ -74,6 +74,8 @@ export class VirtualKeyboard {
 
   getLayoutName(layout) {
     switch (layout) {
+      case "full":
+        return "Full Keyboard";
       case "en":
         return "English Keyboard";
       case "enSc":
@@ -127,7 +129,7 @@ export class VirtualKeyboard {
 
   render() {
     const keyboard = document.createElement("div");
-    keyboard.className = "virtual-keyboard";
+    keyboard.className = `virtual-keyboard ${this.currentLayout}`;
     keyboard.style.display = this.isVisible ? "block" : "none";
     keyboard.id = "keyboard";
 
@@ -142,7 +144,7 @@ export class VirtualKeyboard {
     layoutSelector.id = "layout-selector";
     layoutSelector.onchange = (e) => this.changeLayout(e.target.value);
 
-    const layouts = ["en", "enSc", "th", "thSc", "numpad", "scNum"];
+    const layouts = ["full", "en", "enSc", "th", "thSc", "numpad", "scNum"];
     layouts.forEach((layout) => {
       const option = document.createElement("option");
       option.value = layout;
@@ -160,13 +162,17 @@ export class VirtualKeyboard {
       const rowElement = document.createElement("div");
       rowElement.className = "keyboard-row";
 
-      row.forEach((key) => {
+      row.forEach((key, index) => {
         const keyElement = document.createElement("button");
         keyElement.className = "keyboard-key key";
         keyElement.textContent = key;
         keyElement.type = "button";
 
         keyElement.dataset.key = key;
+
+        if (index >= row.length - 4) {
+          keyElement.classList.add("concat-keys");
+        }
 
         if (key === "Space") {
           keyElement.className += " space";
@@ -234,6 +240,95 @@ export class VirtualKeyboard {
     }
 
     switch (keyPressed) {
+      case "Esc":
+        // ปิดหน้าต่างป๊อปอัพหรือยกเลิกการทำงานปัจจุบัน
+        const modals = document.querySelectorAll(".modal");
+        if (modals.length === 0) {
+          document.exitFullscreen();
+          console.warn("No modals found to close.");
+        }
+        modals.forEach((modal) => {
+          modal.classList.add("hidden"); // ซ่อน modal
+        });
+        break;
+
+      case "F1":
+        break;
+
+      case "F2":
+        // เปิดโหมดแก้ไขสำหรับ element ที่เลือก
+        const activeElement = document.activeElement;
+        if (activeElement && activeElement.contentEditable !== undefined) {
+          activeElement.contentEditable = true;
+          activeElement.focus();
+          console.log(activeElement.contentEditable);
+        } else {
+          console.warn("No editable element found.");
+        }
+        break;
+
+      case "F3":
+        // เปิดการค้นหา
+        event.preventDefault();
+        this.option.openSearch();
+        break;
+
+      case "F4":
+        // เปิดเมนูการตั้งค่า
+        event.preventDefault();
+        this.option.openSettings();
+        break;
+
+      case "F5":
+        // รีโหลดหน้าเว็บ (คงเดิม)
+        window.location.reload();
+        break;
+
+      case "F6":
+        // สลับระหว่างโหมดกลางวัน/กลางคืน
+        document.body.classList.toggle("dark-mode");
+        break;
+
+      case "F7":
+        break;
+
+      case "F8":
+        break;
+
+      case "F9":
+        break;
+
+      case "F10":
+        break;
+
+      case "F11":
+        if (!document.fullscreenElement) {
+          document.documentElement
+            .requestFullscreen()
+            .catch((err) =>
+              console.error("Error attempting to enable fullscreen:", err)
+            );
+        } else {
+          document
+            .exitFullscreen()
+            .catch((err) =>
+              console.error("Error attempting to exit fullscreen:", err)
+            );
+        }
+        break;
+
+      case "F12":
+        break;
+
+      case "HOME":
+        this.currentInput.setSelectionRange(Math.max(0, 0), Math.max(0, 0));
+        break;
+
+      case "END":
+        const length = this.currentInput.value.length;
+        this.currentInput.setSelectionRange(length, length);
+        break;
+
       case "Backspace":
       case "backspace":
         if (start === end && start > 0) {
@@ -248,41 +343,96 @@ export class VirtualKeyboard {
         }
         break;
 
+      case "DEL⌦":
+        if (start === end && start < value.length) {
+          this.currentInput.value =
+            value.slice(0, start) + value.slice(end + 1);
+          this.currentInput.selectionStart = this.currentInput.selectionEnd =
+            start;
+        } else {
+          this.currentInput.value = value.slice(0, start) + value.slice(end);
+          this.currentInput.selectionStart = this.currentInput.selectionEnd =
+            start;
+        }
+        break;
+
       case "Space":
         await this.insertText(" ");
         break;
 
-      case "Tab":
+      case "Tab ↹":
         await this.insertText("\t");
         break;
 
-      case 'Enter':
+      case "Enter":
         if (this.currentInput.tagName === "TEXTAREA") {
-          const start = this.currentInput.selectionStart;
-          const end = this.currentInput.selectionEnd;
-          const value = this.currentInput.value;
-          this.currentInput.value = value.slice(0, start) + "\n" + value.slice(end);
+          this.currentInput.value =
+            value.slice(0, start) + "\n" + value.slice(end);
           this.currentInput.setSelectionRange(start + 1, start + 1);
-        } else if (this.currentInput.tagName === "INPUT" || this.currentInput.type === "password" || this.currentInput.type === "text") {
+        } else if (
+          this.currentInput.tagName === "INPUT" ||
+          this.currentInput.type === "password" ||
+          this.currentInput.type === "text"
+        ) {
           if (this.currentInput.form) {
-            const submitButton = this.currentInput.form.querySelector('input[type="submit"], button[type="submit"], button[type="button"], button[onclick]');
+            const submitButton = this.currentInput.form.querySelector(
+              'input[type="submit"], button[type="submit"], button[type="button"], button[onclick]'
+            );
             if (submitButton) {
               submitButton.click();
             } else {
-              this.currentInput.form.submit(); 
+              this.currentInput.form.submit();
             }
           } else {
-            this.currentInput.value += '\n'; 
+            this.currentInput.value += "\n";
           }
         }
         break;
 
-      case "Caps":
+      case "Caps 🄰":
         this.toggleCapsLock();
         break;
 
-      case "Shift":
+      case "Shift ⇧":
         this.toggleShift();
+        break;
+
+      case "←":
+        this.currentInput.setSelectionRange(
+          Math.max(0, start - 1),
+          Math.max(0, start - 1)
+        );
+        break;
+
+      case "→":
+        this.currentInput.setSelectionRange(start + 1, start + 1);
+        break;
+
+      case "↑":
+      case "↓":
+        const text = this.currentInput.value;
+        const lines = text.substring(0, start).split("\n");
+        const currentLineIndex = lines.length - 1;
+        const currentLine = lines[currentLineIndex];
+        const columnIndex = start - text.lastIndexOf("\n", start - 1) - 1;
+
+        if (keyPressed === "↑" && currentLineIndex > 0) {
+          const prevLineLength = lines[currentLineIndex - 1].length;
+          const newPos =
+            start -
+            currentLine.length -
+            1 -
+            Math.min(columnIndex, prevLineLength);
+          this.currentInput.setSelectionRange(newPos, newPos);
+        } else if (keyPressed === "↓" && currentLineIndex < lines.length - 1) {
+          const nextLine = lines[currentLineIndex + 1];
+          const newPos =
+            start +
+            currentLine.length +
+            1 +
+            Math.min(columnIndex, nextLine.length);
+          this.currentInput.setSelectionRange(newPos, newPos);
+        }
         break;
 
       default:
@@ -299,8 +449,6 @@ export class VirtualKeyboard {
     this.currentInput.focus();
     const event = new Event("input", { bubbles: true });
     this.currentInput.dispatchEvent(event);
-    // console.log(this.encodeText(convertToCorrectCase(keyPressed)));
-    // console.log(keyPressed);
   }
 
   async insertText(text) {
@@ -318,7 +466,7 @@ export class VirtualKeyboard {
 
   toggleCapsLock() {
     this.capsLockActive = !this.capsLockActive;
-    document.querySelectorAll('.key[data-key="Caps"]').forEach((key) => {
+    document.querySelectorAll('.key[data-key="Caps 🄰"]').forEach((key) => {
       key.classList.toggle("active", this.capsLockActive);
       key.classList.toggle("bg-gray-400", this.capsLockActive);
     });
@@ -332,7 +480,7 @@ export class VirtualKeyboard {
     });
 
     const keyboardKeys = document.querySelectorAll(
-      ".key:not([data-key='Caps'])"
+      ".key:not([data-key='Caps 🄰'])"
     );
     keyboardKeys.forEach((key) => {
       const currentChar = key.textContent.trim();
@@ -360,17 +508,16 @@ export class VirtualKeyboard {
 
       if (
         this.capsLockActive &&
-        this.currentLayout === "en" &&
+        (this.currentLayout === "en" || this.currentLayout === "enSc") &&
         this.EngAlphabetShift[currentChar]
       ) {
         key.textContent = this.EngAlphabetShift[currentChar];
         key.dataset.key = this.EngAlphabetShift[currentChar];
       } else if (
         !this.capsLockActive &&
-        this.currentLayout === "en" &&
+        (this.currentLayout === "en" || this.currentLayout === "enSc") &&
         Object.values(this.EngAlphabetShift).includes(currentChar)
       ) {
-        // เปลี่ยนกลับเมื่อปิด Shift
         const originalKey = Object.keys(this.EngAlphabetShift).find(
           (key) => this.EngAlphabetShift[key] === currentChar
         );
@@ -383,14 +530,9 @@ export class VirtualKeyboard {
   }
 
   toggleShift() {
-    if (this.capsLockActive) {
-      return this.toggleCapsLock();
-    }
-
     this.shiftActive = !this.shiftActive;
-    document.querySelectorAll('.key[data-key="Shift"]').forEach((key) => {
+    document.querySelectorAll('.key[data-key="Shift ⇧"]').forEach((key) => {
       key.classList.toggle("active", this.shiftActive);
-      key.classList.toggle("bg-gray-400", this.shiftActive);
     });
 
     document.querySelectorAll(".key").forEach((key) => {
@@ -402,10 +544,11 @@ export class VirtualKeyboard {
     });
 
     const keyboardKeys = document.querySelectorAll(
-      ".key:not([data-key='Shift'])"
+      ".key:not([data-key='Shift ⇧'])"
     );
     keyboardKeys.forEach((key) => {
       const currentChar = key.textContent.trim();
+      keyboardKeys.className += " space";
       if (
         this.shiftActive &&
         this.currentLayout === "th" &&
@@ -430,14 +573,14 @@ export class VirtualKeyboard {
 
       if (
         this.shiftActive &&
-        this.currentLayout === "en" &&
+        (this.currentLayout === "en" || this.currentLayout === "enSc") &&
         this.EngAlphabetShift[currentChar]
       ) {
         key.textContent = this.EngAlphabetShift[currentChar];
         key.dataset.key = this.EngAlphabetShift[currentChar];
       } else if (
         !this.shiftActive &&
-        this.currentLayout === "en" &&
+        (this.currentLayout === "en" || this.currentLayout === "enSc") &&
         Object.values(this.EngAlphabetShift).includes(currentChar)
       ) {
         // เปลี่ยนกลับเมื่อปิด Shift
@@ -545,7 +688,7 @@ export class VirtualKeyboard {
 
   scrambleKeyboard() {
     const keys = document.querySelectorAll(
-      ".key:not([data-key=backspace]):not([data-key='+']):not([data-key='-']):not([data-key='*']):not([data-key='/']):not([data-key='%']):not([data-key='=']):not([data-key='.']):not([data-key='00'])"
+      ".key:not([data-key=backspace]):not([data-key='+']):not([data-key='-']):not([data-key='*']):not([data-key='/']):not([data-key='%']):not([data-key='=']):not([data-key='.']):not([data-key='(']):not([data-key=')']):not([data-key='_'])"
     );
     const numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
     this.shuffleArray(numbers);
@@ -557,7 +700,7 @@ export class VirtualKeyboard {
 
   scrambleEnglishKeys() {
     const keys = document.querySelectorAll(
-      ".key:not([data-key='Space']):not([data-key='Backspace']):not([data-key='Caps']):not([data-key='Shift']):not([data-key='Enter']):not([data-key='Tab']):not([data-key='`']):not([data-key='1']):not([data-key='2']):not([data-key='3']):not([data-key='4']):not([data-key='5']):not([data-key='6']):not([data-key='7']):not([data-key='8']):not([data-key='9']):not([data-key='0']):not([data-key='-']):not([data-key='+']):not([data-key='='])"
+      ".key:not([data-key='Space']):not([data-key='Backspace']):not([data-key='Caps 🄰']):not([data-key='Shift ⇧']):not([data-key='Enter']):not([data-key='Tab ↹']):not([data-key='`']):not([data-key='1']):not([data-key='2']):not([data-key='3']):not([data-key='4']):not([data-key='5']):not([data-key='6']):not([data-key='7']):not([data-key='8']):not([data-key='9']):not([data-key='0']):not([data-key='-']):not([data-key='+']):not([data-key='=']):not([data-key='~']):not([data-key='!']):not([data-key='@']):not([data-key='#']):not([data-key='$']):not([data-key='%']):not([data-key='^']):not([data-key='&']):not([data-key='*']):not([data-key='(']):not([data-key=')']):not([data-key='_'])"
     );
     const englishAlphabet = "abcdefghijklmnopqrstuvwxyz".split("");
     this.shuffleArray(englishAlphabet);
@@ -569,7 +712,7 @@ export class VirtualKeyboard {
 
   scrambleThaiKeys() {
     const keys = document.querySelectorAll(
-      ".key:not([data-key='Backspace']):not([data-key='Caps']):not([data-key='Shift']):not([data-key='Enter']):not([data-key='Space'])"
+      ".key:not([data-key='Backspace']):not([data-key='Caps 🄰']):not([data-key='Shift ⇧']):not([data-key='Enter']):not([data-key='Space'])"
     );
     const ThaiAlphabet = "กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรฤลฦวศษสหฬอฮ".split(
       ""
